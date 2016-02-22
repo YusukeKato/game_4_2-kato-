@@ -3,7 +3,7 @@
  * RPG
  * Yusuke Kato
  * 2016.2.20
- * 2016.2.21
+ * 2016.2.22
  */
  
 #include <stdio.h>
@@ -60,6 +60,16 @@ void help(void)
 	printf("==============================\n");
 }
 
+void story_1(void)
+{
+	printf("=================================================\n");
+	printf( "\n\t私は勇者となった。\n"
+			"\n\t使命は魔王をたおすこと。\n"
+			"\n\tその使命を果たすため、\n"
+			"\n\t私は旅に出た。\n\n");
+	printf("=================================================\n");
+}
+
 /********** バトルシステム（変更考える） **********/
 void battle(void)
 {
@@ -71,8 +81,8 @@ void battle(void)
 	int teki;
 	int fg=0;
 	int move;
-	int kusuri_hp;
-	int kusuri_mp;
+	//int kusuri_hp;
+	//int kusuri_mp;
 	struct character enemy;
 	struct character player;
 	
@@ -198,6 +208,7 @@ void battle(void)
 				" 3:薬を使う\n"
 				" 4:様子を見る\n"
 				" 5:逃げる\n");
+		printf(" 入力：");
 		scanf("%d",&move);
 		switch(move)
 		{
@@ -210,7 +221,7 @@ void battle(void)
 			player.power = power;
 			break;
 			case 2:
-			if(player.mp<30)
+			if(player.mp<50)
 			{
 				printf(" MPが足りません\n");
 				break;
@@ -219,14 +230,14 @@ void battle(void)
 			printf(" %s の攻撃！！",player.name);
 			printf(" %d のダメージ！！\n",(player.power*2)-enemy.defense);
 			enemy.hp -= (player.power*2)-enemy.defense;
-			player.mp -= 30;
+			player.mp -= 50;
 			player.power = power;
 			break;
 			case 3:
 			printf(" %s は薬を使った",player.name);
 			printf(" HPとMPが回復した\n");
-			player.hp += kusuri_hp;
-			player.mp += kusuri_mp;
+			player.hp = hp;
+			player.mp = mp;
 			break;
 			case 4:
 			printf(" %s は様子を見た・・・・・・\n",player.name);
@@ -469,12 +480,14 @@ void battle_maou(void)
 	fclose(fp);
 	
 	strncpy(enemy.name,"魔王",sizeof(enemy.name));
-	enemy.level = 100;
-	enemy.hp = 3000;
-	enemy.power = 500;
+	enemy.level = 9999;
+	enemy.hp = 20000;
+	enemy.mp = 10000;
+	enemy.power = 1000;
+	enemy.defense = 1000;
 	enemy.money = 10000;
 	
-	printf(" 魔王「私に勝てば世界はお前のものだ。さあ、闘おう。」\n");
+	printf(" 魔王「私に勝てば世界はお前のものだ。さあ、闘おう。」\n\n");
 	printf("==================================================\n");
 	while(fg==0)
 	{
@@ -484,24 +497,25 @@ void battle_maou(void)
 				" 3:薬を使う\n"
 				" 4:様子を見る\n"
 				" 5:逃げる\n");
+		printf(" 入力：");
 		scanf("%d",&move);
 		switch(move)
 		{
 			case 1:
 			printf(" %s の攻撃！！",player.name);
-			printf(" %d のダメージ！！\n",player.power);
-			enemy.hp -= player.power;
+			printf(" %d のダメージ！！\n",player.power-enemy.defense);
+			enemy.hp -= player.power - enemy.defense;
 			break;
 			case 2:
-			if(player.mp<30)
+			if(player.mp<100)
 			{
 				printf(" MPが足りません\n");
 				break;
 			}
 			printf(" %s の攻撃！！",player.name);
-			printf(" %d のダメージ！！\n",player.power * 2);
-			enemy.hp -= player.power * 2;
-			player.mp -= 30;
+			printf(" %d のダメージ！！\n",player.power*2 - enemy.defense);
+			enemy.hp -= player.power*2 - enemy.defense;
+			player.mp -= 100;
 			break;
 			case 3:
 			printf(" %s は薬を使った",player.name);
@@ -529,16 +543,21 @@ void battle_maou(void)
 			printf( " レベルが１０上がった！！\n"
 					" お金を\10000もらった！！\n");
 			player.level += 10;
-			player.hp += 500;
+			player.hp += 1000;
 			player.mp += 300;
-			player.power += 300;
-			player.defense += 300;
-			player.money += 10000;
+			player.power += 500;
+			player.defense += 500;
+			player.money += 100000;
+			player.flag = 2;
 		}
-		srand((unsigned)time(NULL));
-		enemy.power += (rand()%30 + 10)*player.level;
-		printf(" %s の攻撃！！",enemy.name);
-		printf(" %d のダメージ！！\n",enemy.power);
+		if(fg==0)
+		{
+			srand((unsigned)time(NULL));
+			enemy.power += (rand()%30 + 10)*player.level;
+			printf(" %s の攻撃！！",enemy.name);
+			printf(" %d のダメージ！！\n",enemy.power-player.defense);
+			player.hp -= enemy.power - player.defense;
+		}
 		if(player.hp<=0)
 		{
 			fg=1;
@@ -546,7 +565,18 @@ void battle_maou(void)
 			exit(0);
 		}
 	}
-	
+	fp = fopen("game_4_2_save_data.txt","w");
+	fprintf(fp,"%s %d %d %d %d %d %d %d %d\n"
+					,player.name
+					,player.level
+					,player.hp
+					,player.mp
+					,player.power
+					,player.defense
+					,player.money
+					,player.kusuri
+					,player.flag);
+	fclose(fp);
 }
 
 /********** 店 **********/
@@ -574,11 +604,11 @@ void shop(void)
 	while(fg==0)
 	{
 		printf(" 何を買いますか\n");
-		printf( " 1:薬(\100)\n"
-				" 2:剣(\1000)\n"
-				" 3:盾(\1000)\n"
-				" 4:HPフエール(\2000)\n"
-				" 5:MPフエール(\3000)\n"
+		printf( " 1:薬(100円)\n"
+				" 2:剣(1000円)\n"
+				" 3:盾(1000円)\n"
+				" 4:HPフエール(2000円)\n"
+				" 5:MPフエール(3000円)\n"
 				" 6:店を出る\n");
 		printf(" 入力：");
 		scanf("%d",&shop);
@@ -601,7 +631,7 @@ void shop(void)
 				break;
 			}
 			printf(" 剣を買った\n");
-			printf(" 攻撃が２０上がった！！");
+			printf(" 攻撃が５０上がった！！");
 			player.money -= 1000;
 			player.power += 50;
 			break;
@@ -612,7 +642,7 @@ void shop(void)
 				break;
 			}
 			printf(" 盾を買った\n");
-			printf(" 防御が２０上がった！！");
+			printf(" 防御が５０上がった！！");
 			player.money -= 1000;
 			player.defense += 50;
 			break;
@@ -623,7 +653,7 @@ void shop(void)
 				break;
 			}
 			printf(" HPフエールを買った\n");
-			printf(" HPの上限が１００上がった！！\n");
+			printf(" HPの上限が２００上がった！！\n");
 			player.money -= 2000;
 			player.hp += 200;
 			break;
@@ -634,7 +664,7 @@ void shop(void)
 				break;
 			}
 			printf(" MPフエールを買った\n");
-			printf(" MPの上限が１０上がった！！\n");
+			printf(" MPの上限が５０上がった！！\n");
 			player.money -= 3000;
 			player.mp += 50;
 			break;
@@ -648,8 +678,60 @@ void shop(void)
 			break;
 		}
 		printf("\n");
+		fp = fopen("game_4_2_save_data.txt","w");
+		fprintf(fp,"%s %d %d %d %d %d %d %d %d\n"
+					,player.name
+					,player.level
+					,player.hp
+					,player.mp
+					,player.power
+					,player.defense
+					,player.money
+					,player.kusuri
+					,player.flag);
+		fclose(fp);
+		fp = fopen("game_4_2_save_data.txt","r");
+		while(fscanf(fp,"%s %d %d %d %d %d %d %d %d",player.name,&player.level,&player.hp,&player.mp,&player.power,&player.defense,&player.money,&player.kusuri,&player.flag) != EOF){
+			printf("\n 名前: %s\n レベル: %d\n HP: %d\n MP: %d\n 攻撃 ; %d\n 防御 : %d\n お金: %d\n 薬の数: %d\n 進度: %d\n\n"
+						,player.name
+						,player.level
+						,player.hp
+						,player.mp
+						,player.power
+						,player.defense
+						,player.money
+						,player.kusuri
+						,player.flag);
+		}
+		fclose(fp);
 	}
 	printf("==================================================\n");
+	fp = fopen("game_4_2_save_data.txt","w");
+	fprintf(fp,"%s %d %d %d %d %d %d %d %d\n"
+					,player.name
+					,player.level
+					,player.hp
+					,player.mp
+					,player.power
+					,player.defense
+					,player.money
+					,player.kusuri
+					,player.flag);
+	fclose(fp);
+	fp = fopen("game_4_2_save_data.txt","r");
+	while(fscanf(fp,"%s %d %d %d %d %d %d %d %d",player.name,&player.level,&player.hp,&player.mp,&player.power,&player.defense,&player.money,&player.kusuri,&player.flag) != EOF){
+		printf("\n 名前: %s\n レベル: %d\n HP: %d\n MP: %d\n 攻撃 ; %d\n 防御 : %d\n お金: %d\n 薬の数: %d\n 進度: %d\n\n"
+						,player.name
+						,player.level
+						,player.hp
+						,player.mp
+						,player.power
+						,player.defense
+						,player.money
+						,player.kusuri
+						,player.flag);
+	}
+	fclose(fp);
 }
 
 /********** キャラクター作成 **********/
@@ -736,20 +818,44 @@ void make_char(void)
 	fclose(fp);	
 }
 
-/********** story_1 **********/
-void story_1(void)
+/********** senntaku **********/
+int senntaku(void)
 {
 	int moution;
 	int fg=0;
+	struct character player;
+	fp = fopen("game_4_2_save_data.txt","r");
+	while(fscanf(fp,"%s %d %d %d %d %d %d %d %d",player.name,&player.level,&player.hp,&player.mp,&player.power,&player.defense,&player.money,&player.kusuri,&player.flag) != EOF){
+		printf("\n 名前: %s\n レベル: %d\n HP: %d\n MP: %d\n 攻撃 ; %d\n 防御 : %d\n お金: %d\n 薬の数: %d\n 進度: %d\n\n"
+						,player.name
+						,player.level
+						,player.hp
+						,player.mp
+						,player.power
+						,player.defense
+						,player.money
+						,player.kusuri
+						,player.flag);
+		}
+	fclose(fp);
+	
+	story_1();
+	
 	while(fg==0)
 	{
+		if(player.flag==2)
+		{
+			printf(" \n\n\t！！！！！ゲームクリア！！！！！\n\n");
+			return 0;
+		}
 		printf("==================================================\n");
 		printf(" 何をしますか\n");
 		printf( " 1:戦いへ\n"
 				" 2:ボス戦\n"
-				" 3:お店に行く:\n"
+				" 3:お店に行く\n"
 				" 4:終了\n"
 				" 5:ヘルプ\n");
+		printf(" 入力：");
 		scanf("%d",&moution);
 		switch(moution)
 		{
@@ -772,30 +878,13 @@ void story_1(void)
 	}
 }
 
+
 /********** main関数 **********/
 int main(void)
 {
-	struct character player;
-	printf(" \n\nゲームを始めます\n");
+	printf(" \n\nゲームを開始します\n\n");
 	make_char();
-	fp = fopen("game_4_2_save_data.txt","r");
-		while(fscanf(fp,"%s %d %d %d %d %d %d %d %d",player.name,&player.level,&player.hp,&player.mp,&player.power,&player.defense,&player.money,&player.kusuri,&player.flag) != EOF){
-			printf("\n 名前: %s\n レベル: %d\n HP: %d\n MP: %d\n 攻撃 ; %d\n 防御 : %d\n お金: %d\n 薬の数: %d\n 進度: %d\n\n"
-						,player.name
-						,player.level
-						,player.hp
-						,player.mp
-						,player.power
-						,player.defense
-						,player.money
-						,player.kusuri
-						,player.flag);
-		}
-	fclose(fp);
-	if(player.flag==1)
-	story_1();
-	else if(player.flag==2)
-	printf("\n\n\t！！！！！ ゲームクリア ！！！！！\n\n");	
+	senntaku();	
 	printf(" \n\nゲームを終了します\n\n");
 	return 0;
 }
